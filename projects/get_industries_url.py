@@ -1,4 +1,4 @@
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Page
 from urllib.parse import urljoin
 import csv
 import traceback
@@ -49,9 +49,7 @@ def main():
             if browser:
                 browser.close()
             
-        
-        
-        
+     
 
 def save_link(urls_list, name = "data/default.csv"):
     with open("data/urls_profession.csv", "w", newline="", encoding="UTF-8") as f:
