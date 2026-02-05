@@ -15,35 +15,48 @@ def main():
             
             jobs = []
             seen = set()
-            for url in urls_list[:1]:
+            for url in urls_list[:4]:
                 # Browser url
                 page.goto(url[0])
                 url_base = page.url
                 
-                # Get section has jobs info.
-                section = page.locator("div.wp-container", has=page.locator('button:has-text("Sắp xếp")'))
-                
-                # get <a> element of job_card
-                a_elements = section.locator("a", has=page.locator("i.svicon-heart"))
-                
-                a_elements.first.wait_for()
-                  
-                for element in a_elements.all():
-                    link = get_job_url(element)
-                    id_job = get_job_id(link)
+                i = 0
+                while i<10:
+                    i+= 1
                     
-                    # Check the job is available in data
-                    if check_job_available(id_job=id_job, seen=seen):
-                        continue
+                    # Get section has jobs info.
+                    section = page.locator("div.wp-container", has=page.locator('button:has-text("Sắp xếp")'))
                     
-                    url = urljoin(url_base, link)
+                    # get job <a> card
+                    a_elements = section.locator("a", has=page.locator("i.svicon-heart"))
                     
-                    if id_job:
+                    a_elements.first.wait_for()
+                    
+                    for element in a_elements.all():
+                        link = get_job_url(element)
+                        id_job = get_job_id(link)
+                        
+                        # Check the job is available in data
+                        if check_job_available(id_job=id_job, seen=seen):
+                            print(f"Id: {id_job} - Link: {link}")
+                            continue
+                        
+                        url = urljoin(url_base, link)
+                        
+                        # Check value of id_job, if id_job not None then append data
+                        
                         jobs.append(extract_data(element, id_job, url))
                         seen.add(id_job)
+                        
+                    btn_next = page.locator("a:has(i.svicon-chevron-right)")
+                    btn_next.wait_for()
+                    if btn_next.count()==0:
+                        break
+                    btn_next.click()
                     
-            for job in jobs[:5]:
-                print(job)
+                    
+            if jobs:
+                save_job_info_to_file(jobs, "data/jobs_info.csv")
                         
         except Exception as e:
             traceback.print_exc()
@@ -67,38 +80,29 @@ def get_job_id(link):
     return None
     
 def check_job_available(id_job:str, seen):
-    if id_job in seen:
+    if not id_job or id_job in seen:
         print(f"This job is available: {id_job}")
         return True
     return False
 
-def get_locator(element, field):
-    try:
-       
-        locator = element.locator(field)
-        return locator
-    except Exception as e:
-        print(f"Error: {e}")
-        print(f"The locator {field} is not found")
-        return None
+def get_locator(element, locator):      
+    locator = element.locator(locator)
+    return locator
 
+# Get data safe way
 def safe_data(locator):
-    return locator.inner_text() if locator.count()>0 else None
+    try:
+        return locator.inner_text(timeout=2000)
+    except:
+        return None
 
 
 def extract_data(element, id_job:str, url:str):
     try:
-        locator_title = get_locator(element, "h3").first
-        title = safe_data(locator_title)
-        
-        locator_company = get_locator(element, "h3").nth(1)
-        company = safe_data(locator_company)
-        
-        locator_salary = get_locator(element, "i.svicon-money-circle+ span" )
-        salary = safe_data(locator_salary)
-        
-        locator_location = get_locator(element, "i.svicon-location+ span")
-        location = safe_data(locator_location)
+        title = safe_data(get_locator(element, "h3").first)
+        company = safe_data(get_locator(element, "h3").nth(1))
+        salary = safe_data(get_locator(element, "i.svicon-money-circle+ span" ))
+        location = safe_data(get_locator(element, "i.svicon-location+ span"))
         
         return {
             "id_job": id_job,
@@ -124,11 +128,11 @@ def get_url_from_file(filename):
 def save_job_info_to_file(jobs_list, path_str="data/default.csv"):
     
     # get fieldnames of dict in jobs list
-    if jobs_list and jobs_list.keys():
+    if jobs_list:
         fieldnames = jobs_list[0].keys()
     
     # Save jobs info in csv file
-    with open(path_str, "a", newline="", encoding="UTF-8") as f:
+    with open(path_str, "w", newline="", encoding="UTF-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(jobs_list)
