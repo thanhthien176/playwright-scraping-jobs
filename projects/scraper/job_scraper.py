@@ -3,34 +3,56 @@ from urllib.parse import urljoin
 import traceback
 
 
-def scrape_jobs(url_base, page: Page):
+# Scrape all jobs in the page
+def scrape_jobs(page: Page, url_base, seen):
     
     section = page.locator("div.wp-container", has=page.locator('button:has-text("Sắp xếp")'))
         
-    # get job <a> card
+    # get job <a> element
     a_elements = section.locator("a", has=page.locator("i.svicon-heart"))
     
     a_elements.first.wait_for()
     
     list_res = []
     for element in a_elements.all():
+        
+        # Get link from href of <a> element
         link = get_job_url(element)
-        # id_job = get_job_id(link)
+        
+        # Check if don't have link then skip 
         if not link:
             continue
         
+        # Get id of the job in the link
+        # id_job = get_job_id(link)
+        
+        # Check the job saved in database
+        # if not id_job or id_job in seen:
+        #     continue
+        
+        # seen.add(id_job)
+        
+        # Join the link with this page's url to a full link         
         url = urljoin(url_base, link)
                 
         list_res.append(extract_data(element, url))
-    
-    return list_res
         
+    return list_res
+
+
+# def get_job_id(link):
+#     if link and "id" in link and "." in link:
+#         return link.split("id")[-1].split(".")[0]
+#     return None
 
 def get_job_url(element):
     if element:
         href = element.get_attribute("href")
-        if href and "?" in href:
-            link = href.split("?")[0]
+        if href:
+            if "?" in href:
+                link = href.split("?")[0]
+            else:
+                link = href
             return link
     return None
 
@@ -53,6 +75,7 @@ def extract_data(element,  url:str):
         location = safe_data(get_locator(element, "i.svicon-location+ span"))
         
         return {
+            # "id_job": id_job,
             "title": title,
             "company": company,
             "salary": salary,

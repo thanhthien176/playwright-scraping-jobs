@@ -1,5 +1,6 @@
-from playwright.sync_api import sync_playwright
-from scraper import job_scraper
+from playwright.sync_api import sync_playwright, Page
+from scraper.job_scraper import scrape_jobs
+from services.job_service import process_jobs
 
 from urllib.parse import urljoin
 from dotenv import load_dotenv
@@ -16,17 +17,20 @@ def main():
             url = os.getenv("LINK_SCRAPE")
             page.goto(url=url)
             
-            raws = []
+            result = []
+                        
+            # Browse all pages of the industry.
             while True:
                 url_base = page.url
-                raws.extend(job_scraper(url_base, page))
+                raw_jobs = scrape_jobs(url_base, page)
                 
+                result.extend(process_jobs(raw_jobs=raw_jobs))
                 
-                btn_next = page.locator("a:has(i.svicon-chevron-right)")
-                btn_next.wait_for()
-                if btn_next.count()==0:
-                    break
-                btn_next.click()
+                go_to_next_page(page=page)
+            
+                
+            
+                
             
             
         
@@ -38,6 +42,15 @@ def main():
                 browser.close()
 
 
+def go_to_next_page(page: Page, timeout=3000):
+    btn_next = page.locator("a:has(i.svicon-chevron-right)")
+    
+    if btn_next.count()==0:
+        return False
+    
+    btn_next.first.click()
+    page.wait_for_load_state("networkidle", timeout=timeout)
+    return True
 
 
 
