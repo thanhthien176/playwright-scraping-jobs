@@ -27,15 +27,15 @@ class CSVStorage:
             ])
                 
     def load_job_id(self):
-        exsiting_ids = set()
+        existing_ids = set()
         
         if not os.path.exists(self.path):
-            return exsiting_ids
+            return existing_ids
         
         with open(self.path, "r", encoding="UTF-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                exsiting_ids.add(row["job_id"])
+                existing_ids.add(row["job_id"])
             
-        return exsiting_ids
+        return existing_ids
     

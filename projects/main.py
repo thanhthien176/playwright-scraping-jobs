@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright, Page
 from scraper.job_scraper import scrape_jobs
 from services.job_service import process_jobs
+from storages.csv_storage import CSVStorage
 
 from urllib.parse import urljoin
 from dotenv import load_dotenv
@@ -14,21 +15,25 @@ def main():
             browser = p.chromium.launch(headless=False, slow_mo=200)
             page = browser.new_page()
             
-            url = os.getenv("LINK_SCRAPE")
+            # url = os.getenv("LINK_SCRAPE")
+            url = os.getenv("LINK_SAMPLE")
             page.goto(url=url)
             
-            result = []
-            
             file_path = "data/jobs_info.csv"
+            storage = CSVStorage(file_path)
+            
+            existing_ids = storage.load_job_id()
                         
             # Browse all pages of the industry.
             while True:
                 url_base = page.url
-                raw_jobs = scrape_jobs(url_base, page)
+                raw_jobs = scrape_jobs(page, url_base=url_base)
                 
-                result.extend(process_jobs(raw_jobs=raw_jobs, file_path=file_path))
+                process_jobs(raw_jobs, storage=storage, existing_ids=existing_ids)
                 
-                go_to_next_page(page=page)      
+                has_next = go_to_next_page(page=page)
+                if not has_next:
+                    break      
             
         
         except Exception as e:
@@ -39,19 +44,15 @@ def main():
                 browser.close()
 
 
-def go_to_next_page(page: Page, timeout=3000):
+def go_to_next_page(page: Page, timeout=30000):
     btn_next = page.locator("a:has(i.svicon-chevron-right)")
     
     if btn_next.count()==0:
         return False
     
     btn_next.first.click()
-    page.wait_for_load_state("networkidle", timeout=timeout)
+    page.wait_for_load_state("load", timeout=timeout)
     return True
-
-
-
-
 
 
 

@@ -31,15 +31,12 @@ def get_salary(salary_str):
     
     return None, None
 
-def process_jobs(raw_jobs, file_path):
-    jobs = {}
-    storage = CSVStorage(file_path)
-    exsiting_ids = storage.load_job_id()
-    
+def process_jobs(raw_jobs, storage:CSVStorage, existing_ids:set):
+        
     for raw in raw_jobs:
         job_id = generate_job_id(raw['url'])
         
-        if job_id in jobs or job_id in exsiting_ids:
+        if job_id in existing_ids:
             continue    # deduplicate
             
         min_salary, max_salary = get_salary(raw["salary"])
@@ -55,6 +52,6 @@ def process_jobs(raw_jobs, file_path):
         )
         
         storage.append_job(job)
-        jobs[job_id] = job
+        existing_ids.add(job_id)
         
-    return list(jobs.values())
+    
