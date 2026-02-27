@@ -18,20 +18,17 @@ def main():
             page.goto(url=url)
             
             result = []
+            
+            file_path = "data/jobs_info.csv"
                         
             # Browse all pages of the industry.
             while True:
                 url_base = page.url
                 raw_jobs = scrape_jobs(url_base, page)
                 
-                result.extend(process_jobs(raw_jobs=raw_jobs))
+                result.extend(process_jobs(raw_jobs=raw_jobs, file_path=file_path))
                 
-                go_to_next_page(page=page)
-            
-                
-            
-                
-            
+                go_to_next_page(page=page)      
             
         
         except Exception as e:

@@ -1,9 +1,9 @@
 from models.job import Job
+from storages.csv_storage import CSVStorage
 import hashlib
 
 def generate_job_id(url:str) -> str:
     return hashlib.md5(url.encode()).hexdigest()
-
 
 def get_salary(salary_str):
     if not salary_str:
@@ -30,20 +30,21 @@ def get_salary(salary_str):
         return None, None
     
     return None, None
-    
 
-def process_jobs(raw_jobs):
+def process_jobs(raw_jobs, file_path):
     jobs = {}
+    storage = CSVStorage(file_path)
+    exsiting_ids = storage.load_job_id()
     
     for raw in raw_jobs:
         job_id = generate_job_id(raw['url'])
         
-        if job_id in jobs:
+        if job_id in jobs or job_id in exsiting_ids:
             continue    # deduplicate
             
         min_salary, max_salary = get_salary(raw["salary"])
         
-        jobs[job_id] = Job(
+        job = Job(
             job_id=job_id,
             title=raw["title"].strip(),
             company=raw.get("company","").strip(),
@@ -52,4 +53,8 @@ def process_jobs(raw_jobs):
             max_salary=int(max_salary) if max_salary else None,
             url=raw["url"]
         )
+        
+        storage.append_job(job)
+        jobs[job_id] = job
+        
     return list(jobs.values())
