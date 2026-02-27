@@ -30,3 +30,15 @@ project/
 ├── services/
 ├── gui/
 ├── main.py
+
+
+## How to Run
+1. Install dependencies
+2. Run the scraper
+3. Check output CSV files
+
+## Roadmap
+- [x] CSV storage
+- [ ] PostgreSQL integration
+- [ ] Data validation & deduplication
+- [ ] PyQt5 GUI for non-technical users
