@@ -8,3 +8,5 @@ playwright/.cache/
 scraping/
 data/
 sample/
+logs/
+*.log
