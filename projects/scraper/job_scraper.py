@@ -1,6 +1,8 @@
 from playwright.sync_api import Page
 from urllib.parse import urljoin
-import traceback
+import logging
+
+logger = logging.getLogger("scraper")
 
 
 # Scrape all jobs in the page
@@ -11,33 +13,36 @@ def scrape_jobs(page: Page, url_base):
         
         # get job <a> element
         a_elements = section.locator("a", has=page.locator("i.svicon-heart"))
-        
         a_elements.first.wait_for()
         
+        total = a_elements.count()
+        logger.debug(f"Found {total} element in the page")
         list_res = []
-        for element in a_elements.all():
+        
+        
+        for i in range(total):
+            
+            element = a_elements.nth(i)
             
             # Get link from href of <a> element
             link = get_job_url(element)
             
             # Check if don't have link then skip 
             if not link:
+                logger.debug(f"Link of {i} element does not exist")
                 continue
             
             # Join the link with this page's url to a full link         
             url = urljoin(url_base, link)
                     
             list_res.append(extract_data(element, url))
-            
+        
+        logger.info(f"Have scraped {len(list_res)} jobs")    
         return list_res
     except Exception:
-        traceback.print_exc()
+        logger.exception("Error when scrape jobs")
+        return []
 
-
-# def get_job_id(link):
-#     if link and "id" in link and "." in link:
-#         return link.split("id")[-1].split(".")[0]
-#     return None
 
 def get_job_url(element):
     if element:
@@ -58,7 +63,7 @@ def safe_data(locator):
     try:
         return locator.inner_text(timeout=2000)
     except:
-        traceback.print_exc()
+        logger.debug("Don't get text of the element")
         return None
         
 def extract_data(element,  url:str):
@@ -76,5 +81,6 @@ def extract_data(element,  url:str):
             "location": location,
             "url": url,                        
         }
-    except Exception as e:
-        traceback.print_exc()
+    except Exception:
+        logger.exception(f"Error when extract data from {url}")
+        return None
