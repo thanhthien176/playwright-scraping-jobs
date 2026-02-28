@@ -7,7 +7,7 @@ and make the data accessible for non-technical users.
 
 The project is developed step by step:
 - Start with CSV as storage
-- Migrate to PostgreSQL
+- Migrate to SQLlite
 - Build a simple GUI using PyQt5
 
 ## Features
@@ -18,25 +18,55 @@ The project is developed step by step:
 - Prepare architecture for future database integration
 
 ## Tech Stack
-- Python
+- Python 3.10+
 - Playwright
-- CSV (temporary storage)
-- PostgreSQL (planned)
+- CSV (current storage)
+- SQLlite (planned)
 - PyQt5 (planned)
 
 ## Project Structure
-project/
+projects/
 ├── scraper/
 ├── storage/
 ├── services/
 ├── gui/
 ├── main.py
 
+## Getting Started
+
+### Prerequisites
+- Python 3.10+
+- Git
+
+### Installation
+
+1. Clone the repository:
+```bash
+   git clone https://github.com/thanhthien176/playwright-scraping-jobs.git
+   cd playwright-scraping-jobs
+```
+
+2. Create and activate a virtual environment:
+```bash
+   python -m venv venv
+   venv\Scripts\activate        # Windows
+   source venv/bin/activate     # Mac/Linux
+```
+
+3. Install dependencies:
+```bash
+   pip install -r requirements.txt
+```
+
+4. Install Playwright browsers:
+```bash
+   playwright install
+```
 
 ## How to Run
-1. Install dependencies
-2. Run the scraper
-3. Check output CSV files
+```bash
+python main.py
+```
 
 ## Logging                                         
 Log files are automatically created in the `logs/` directory on first run.
@@ -57,6 +87,6 @@ Log format:
 
 ## Roadmap
 - [x] CSV storage
-- [ ] PostgreSQL integration
-- [ ] Data validation & deduplication
+- [ ] SQLlite integration
+- [x] Data validation & deduplication
 - [ ] PyQt5 GUI for non-technical users
