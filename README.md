@@ -7,7 +7,7 @@ and make the data accessible for non-technical users.
 
 The project is developed step by step:
 - Start with CSV as storage
-- Migrate to SQLlite
+- Migrate to SQLite
 - Build a simple GUI using PyQt5
 
 ## Features
@@ -21,7 +21,7 @@ The project is developed step by step:
 - Python 3.10+
 - Playwright
 - CSV (current storage)
-- SQLlite (planned)
+- SQLite (planned)
 - PyQt5 (planned)
 
 ## Project Structure
@@ -83,10 +83,20 @@ Log format:
 
 > `logs/` is excluded from version control. The directory is created automatically at runtime.
 
-
+## CSV
+'''
+job_id,title,company,location,min_salary,max_salary,url
+ced00086448c2649fdb396baeba21a83,Internal HR Team Lead,CÔNG TY F&B ONSET,TP.HCM,15000000,25000000,https://example.com/internal-hr-team-lead.html
+'''
 
 ## Roadmap
 - [x] CSV storage
-- [ ] SQLlite integration
+- [ ] SQLite integration
 - [x] Data validation & deduplication
 - [ ] PyQt5 GUI for non-technical users
+
+## Why this project?
+Many job scraping scripts are hard to maintain and extend.
+This project focuses on clean architecture and gradual scalability.
+
+
