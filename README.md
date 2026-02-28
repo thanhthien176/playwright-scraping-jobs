@@ -14,6 +14,7 @@ The project is developed step by step:
 - Scrape job listings from websites
 - Store scraped data in CSV files
 - Prevent duplicate job entries
+- **Structured logging** with separate files for all logs and errors
 - Prepare architecture for future database integration
 
 ## Tech Stack
@@ -36,6 +37,23 @@ project/
 1. Install dependencies
 2. Run the scraper
 3. Check output CSV files
+
+## Logging                                         
+Log files are automatically created in the `logs/` directory on first run.
+
+| File | Level | Description |
+|------|-------|-------------|
+| `logs/app.log` | DEBUG and above | All activities of the program |
+| `logs/errors.log` | ERROR and Above | Only serious errors |
+
+Log format:
+```
+2026-02-28 10:30:01 | scraper | INFO | Have scraped 20 jobs
+```
+
+> `logs/` is excluded from version control. The directory is created automatically at runtime.
+
+
 
 ## Roadmap
 - [x] CSV storage
