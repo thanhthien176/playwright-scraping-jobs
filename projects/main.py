@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from config.logging_config import setup_logging
 import logging
 import os
-import traceback
 
 load_dotenv()
 setup_logging()

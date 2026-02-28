@@ -15,7 +15,7 @@ LOGGING_CONFIG ={
             "datefmt": "%Y-%m-%d %H:%M:%S"
         },
         "simple":{
-            "format": "%(levelname)s | $(message)s"
+            "format": "%(levelname)s | %(message)s"
         }
     },
     
