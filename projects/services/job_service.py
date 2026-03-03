@@ -1,5 +1,5 @@
 from models.job import Job
-from storages.csv_storage import CSVStorage
+from storages.sqlite_storage import SQLiteStorage
 import hashlib
 import logging
 
@@ -38,7 +38,7 @@ def get_salary(salary_str):
     
     return None, None
 
-def process_jobs(raw_jobs, storage:CSVStorage, existing_ids:set):
+def process_jobs(raw_jobs, storage:SQLiteStorage, existing_ids:set):
     if not raw_jobs:
         logger.warning("raw_jobs list is None, nothing to process")
         return

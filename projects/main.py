@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright, Page
 from scraper.job_scraper import scrape_jobs
 from services.job_service import process_jobs
-from storages.csv_storage import CSVStorage
+from storages.sqlite_storage import SQLiteStorage
 from urllib.parse import urljoin
 from dotenv import load_dotenv
 from config.logging_config import setup_logging
@@ -22,10 +22,10 @@ def main():
             url = os.getenv("LINK_SAMPLE")
             page.goto(url=url)
             
-            file_path = "data/jobs_info.csv"
-            storage = CSVStorage(file_path)
+            file_path = "data/scraper.db"
+            storage = SQLiteStorage(file_path)
             
-            existing_ids = storage.load_job_id()
+            existing_ids = storage.load_job_ids()
             page_num = 1
                         
             # Browse all pages of the industry.
