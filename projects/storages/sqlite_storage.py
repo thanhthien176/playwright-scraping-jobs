@@ -51,7 +51,7 @@ class SQLiteStorage:
                     job.max_salary,
                     job.url,            
                 ))
-            logger.info(f"Appended - {job.url} - job into Jobs table")
+            
         except Exception:
             logger.exception(f"Cannot save into the database: {job.url}")
             
