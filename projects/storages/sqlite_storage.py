@@ -1,12 +1,17 @@
 import sqlite3
 import logging
+import re
 
 logger = logging.getLogger("storage")
 
+VALID_OPERATORS = {"=", ">", "<", ">=", "<=", "!=", "LIKE", "IN", "NOT IN", "IS NULL", "IS NOT NULL"}
+NAME_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+
 class SQLiteStorage:
+    
     def __init__(self, path:str):
         self.path = path
-    
+        
     def create_table(self, table_name: str, columns: dict[str, str] ):
         """ Create a new table dynamically.
 
@@ -21,14 +26,14 @@ class SQLiteStorage:
                 }
             
         """
+        
+        col_defs = ", ".join(
+            f"{col} {col_type}" for col, col_type in columns.items() 
+        )
+        sql_query = f"""CREATE TABLE IF NOT EXISTS {table_name} 
+                        ({col_defs})
+                    """
         try:
-            col_defs = ", ".join(
-                f"{col} {col_type}" for col, col_type in columns.items() 
-            )
-            sql_query = f"""CREATE TABLE IF NOT EXISTS {table_name} 
-                            ({col_defs})
-                        """
-            
             with self._connect() as conn:
                 conn.execute(sql_query)
                 
@@ -36,31 +41,24 @@ class SQLiteStorage:
             
         except Exception:
             logger.exception("Cannot create table '%s'", {table_name})
+
             
-    def _connect(self):
-        # Return the connection, used with 'with' to automatically commit/rollback.
-        conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        return conn
-    
             
     def append(
         self,
         table_name,
-        columns:list[str],
-        values: list | tuple):
+        data: dict,
+        ):
         """Insert a row into the specified table
 
         Args:
             table_name (str): Target table name
-            columns (list[str]): List of column names
-            values (list | tuple): Values corresponding to the columns
+            data (dict): 
         """
-        if len(columns) != len(values):
-            raise ValueError("Column and values length mismatch")
         
-        columns_str = ", ".join(columns)
-        placeholder = ", ".join(["?"]*len(columns))
+        
+        columns_str = ", ".join(data.keys())
+        placeholder = ", ".join(["?"]*len(data))
         
         query = f"""INSERT OR IGNORE INTO {table_name} 
                     ({columns_str})
@@ -69,105 +67,310 @@ class SQLiteStorage:
         try:
             
             with self._connect() as conn:
-                conn.execute(query, values)
+                conn.execute(query, tuple(data.values()))
             
-        
         except Exception:
             logger.exception("Error when append data into '%s' table", table_name)
-            
-            
+ 
+    
+          
     def select(
         self,
-        table_name,
-        columns: list[str] | None=None,
-        where: str | None=None
+        table_name: str,
+        columns:list[str] | None = None,
+        filters:dict |None = None,
+        order_by: str| None = None,
+        order: str = "ASC",
+        limit: int| None = None,
         ):
-        """Retrieve rows from a table with optional column selection and filtering.
-
+        """Select data of columns from the table 
+        
         Args:
-            table_name (str): Target table name
-            columns (list[str]): Columns to retrieve, If None, all columns are selected.
-        """
+            table_name (str): Target table name,
+            columns (list[str]): List columns to retrieve data,
+            filters (dict): Conditions to retrieve data,
+            order_by (str): Column name to order
+            order (str): DESC or ASC, default ASC 
+            limit (int): Number of rows to retrieve,
+            offset (int): Number of rows to skip
+        """    
+        
+        if not self._is_valid_name(table_name):
+            raise ValueError("The table name is incorrect")
+        
         if columns is not None:
+            for col in columns:  
+                if not self._is_valid_name(col):
+                    raise ValueError("The column name is incorrect")
             columns_str = ", ".join(columns)
         else:
             columns_str = "*"
         
-        where_str = f"WHERE {where}" if where else ""
+        query = f"SELECT {columns_str} FROM {table_name}"
+        params = []
         
-        query = f"""
-            SELECT {columns_str}
-            FROM {table_name}
-            {where_str}
-        """
+        if filters:
+            where_sql, where_param = self._parse_logic(filters)
+            query += f" WHERE {where_sql}"
+            params.extend(where_param)
+        
+        if order_by:
+            query += f" ORDER BY {order_by}"
+            if order.upper() in ["ASC", "DESC"]:
+                query += f" {order.upper()}" 
+            
+        if limit:
+            query += " LIMIT ?"
+            params.append(limit)           
+        
         try:
             with self._connect() as conn:
-                rows = conn.execute(query).fetchall()
-            
-            values = [dict(row) for row in rows]
-            logger.info("Data retrieved successfully from the table '%s'",table_name)
-            return values
+                rows = conn.execute(query, params).fetchall()
+
+                return rows    
             
         except Exception:
             logger.exception("Error retrieving data from table '%s'", table_name)
             raise
+
     
     def update(
         self,
-        table_name,
-        column,
-        value,
-        where):
+        table_name: str,
+        data: dict,
+        filters: dict,
+        ):
         """Update values for the column of a table
 
         Args:
             table_name (str): Target table name
-            column (str): Column is updated
-            value: New value of column
-            where (str): Condition of row are updated
+            data (dict): key is column and value is new value of that column
+            filters (dict): Key is column and value is conditions of that column
                 Example:
-                table_name = "Jobs",
-                column = "job_name",
-                value = "Python",
-                where = "id = '123' " 
+                table_name = "Employee"
+                data = {
+                    "department": "Data Engineer",
+                    "salary": 1500,
+                }
+                filters = {
+                    "first_name": "David",
+                    "last_name": "Cameroon",
+                }
+            query = {
+                UPDATE {table_name}
+                SET department = "Data Engineer", salary = 1500
+                WHERE first_name = ? AND last_name = ?, (David, Cameroon)
+            }
         """
-        query = f"""
-                    UPDATE {table_name}
-                    SET {column} = ?
-                    WHERE {where}
-                """
+        query = f"UPDATE {table_name}"
+        set_sql = []
+        params = []
+        if isinstance(data, dict):
+            for col, val in data.items():
+                set_sql.append(f"{col} = ?")
+                params.append(val)
+
+            query += " SET " + ", ".join(set_sql)
+            
+        if filters:
+            where_sql, where_param = self._parse_logic(filters)
+            query += f" WHERE {where_sql}"
+            params.extend(where_param)        
         try:
             with self._connect() as conn:
-                conn.execute(query, (value,))
+                conn.execute(query, tuple(params))
                 
             logger.info("Data updated successfully!")
             
         except Exception:
-            logger.exception("Error updating for '%s' of '%s'",column, table_name)
-            
+            logger.exception("Error updating for '%s'", table_name)
+        
+
+        
     def delete(self,
                table_name,
-               where,
+               filters: dict,
                ):
-        """Delete rows in a table have 'where'
+        """Delete rows in a table
 
         Args:
             table_name (str): Target table name
-            where (str): Condition rows need delete
+            filter (dict): Filter is a dict containing conditions to delete rows in the table
                 Example:
-                    table_name = "Jobs",
-                    where = "job_name = 'Backend Engineer' "
+                    table_name = "Employee",
+                    filter = {
+                        "first_name": "David",
+                        "salary": ("<=", 1000),
+                    }
         """
         
-        query = f"""
-                    DELETE FROM {table_name}
-                    WHERE {where}
-                """
+        query = f"DELETE FROM {table_name}"
+        
+        if not isinstance(filters, dict):
+            raise ValueError(f"Filter is a dict")
+        
+        where_sql, where_param = self._parse_logic(filters)
+        query += f" WHERE {where_sql}"    
+
+        
         try:
             with self._connect() as conn:
-                conn.execute(query)
+                conn.execute(query, tuple(where_param))
             
-            logger.info("Successfully deleted rows from table '%s' where '%s'", table_name, where)
+            logger.info("Successfully deleted rows from table '%s' where '%s'", table_name, filters)
         except Exception:
             logger.exception("Error deleting rows of '%s'", table_name)
+        
+    
+                
+    def count(self, table_name:str, columns:list[str] | None=None, filters:dict|None = None):
+        """_summary_
+
+        Args:
+            table_name (str): Target table name
+            columns (str): Column name is make group
+            filter (dict): WHere to count
+        """
+        if not self._is_valid_name(table_name):
+            raise ValueError("The table name is incorrect")
+        
+
+        if columns is not None:
+            col_str = ""
+            for col in columns:
+                if not self._is_valid_name(col):
+                    raise ValueError("The columns name is incorrect")
+                col_str += f"{col}, "
             
+        query = f"SELECT {col_str} COUNT(*) FROM {table_name}"
+        
+        
+        
+        params = []
+        if filters:
+            where_sql, where_params = self._parse_logic(filters)
+            query += f"WHERE {where_sql}"
+            params.extend(where_params)
+        
+        query += f"GROUP BY {col_str}" if col_str else " "
+      
+        try:
+            with self._connect() as conn:
+                return conn.execute(query, params)
+        
+        except Exception:
+            logger.exception("Error when count '%s' of '%s' ", columns, table_name)   
+    
+    def _connect(self):
+        # Return the connection, used with 'with' to automatically commit/rollback.
+        conn = sqlite3.connect(self.path)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _parse_logic(self, filters:dict):
+        """Build a SQL WHERE clause string and parameter list from a filter dict.
+
+        Supports top-level AND logic between keys, with optional OR groups.
+
+        Args:
+            filters (dict): A dict where each key is either:
+                - "OR", "AND": maps to a sub-list of columns/conditions joined by OR, AND
+                - A column name: maps to a value or (operator, value) tuple
+
+        Returns:
+            tuple[str, list]: A tuple of:
+                - WHERE clause string, e.g. "(col1 = ? AND (col2 = ? OR col3 >= ?))"
+                - Flat list of parameter values matching the placeholders
+
+        Example:
+            filters = {
+                "AND": ["OR": [{"salary": (">=", 5000)}, {"role": ("=","admin")}],
+                {"is_active": ("=", 1)},]
+            }
+            → ("(is_active = ? AND (salary >= ? OR role = ?))", [1, 5000, "admin"])
+        """
+        
+        params = []
+        for key, value in filters.items():
+            if key in ["AND", "OR"]:
+                
+                operator = key
+                sub_clauses = []
+                
+                for items in value:
+                    clause, sub_param = self._parse_logic(items)
+                    
+                    sub_clauses.append(clause)
+                    params.extend(sub_param)
+                
+                joined = f" {operator} ".join(sub_clauses)
+                
+                return f"({joined})", params
+                    
+                    
+            else:
+                return self._parse_compare({key: value})
+                
+    
+    def _parse_compare(self, filter:dict):
+        """
+        Parse a single column condition into a SQL fragment.
+
+        Args:
+            filter (dict): Exactly one key-value pair where value is a tuple (operator, operand).
+                Supported operators:
+                    - ("=", value), ("!=", value), (">", value), ...
+                    - ("IN", [v1, v2])        → "col IN (?, ?)"
+                    - ("NOT IN", [v1, v2])    → "col NOT IN (?, ?)"
+                    - ("BETWEEN", (v1, v2))   → "col BETWEEN ? AND ?"
+                    - ("IS NULL", None)       → "col IS NULL"
+                    - ("IS NOT NULL", None)   → "col IS NOT NULL"
+
+        Returns:
+            tuple[str, list]: SQL fragment string and list of bound parameters.
+
+        Raises:
+            ValueError: If filter has != 1 key, value is not a tuple,
+                        operator is invalid, or operands are malformed.
+        """
+
+        if len(filter) != 1:
+            raise ValueError("Filter must contain exactly one condition")
+        col, val = next(iter(filter.items()))
+        
+        if not self._is_valid_name(col):
+            raise ValueError("The column name is incorrect")
+        
+        if not isinstance(val, tuple):
+            raise ValueError("Value must be a tuple, (operator, value)")
+        
+        op, value = val
+        op = op.upper()
+        if op not in self.VALID_OPERATORS:
+            raise ValueError(f"Invalid operator. Allowed: {self.VALID_OPERATORS}")
+        
+        if op in ["IN", "NOT IN"]:
+            if not value:
+                raise ValueError("Value for IN must be a non-empty list or tuple")
+            placeholder = ", ".join(["?"]* len(value))
+            query = f"{col} {op} ({placeholder})"
+            return query, list(value)
+        
+        elif op in ["IS NULL", "IS NOT NULL"]:
+            query = f"{col} {op}"
+            return query, []
+        
+        elif op == "BETWEEN":
+            if not value or len(value) != 2:
+                raise ValueError("BETWEEN requires exactly two values")
+            query = f"{col} BETWEEN ? AND ?"
+            return query, list(value)
+            
+        else:
+            query = f"{col} {op} ?"
+            return query, [value]
+        
+    def _is_valid_name(self, name):
+        return bool(NAME_PATTERN.fullmatch(name))
+        
+    
