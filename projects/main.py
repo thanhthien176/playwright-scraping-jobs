@@ -2,13 +2,11 @@ from playwright.sync_api import sync_playwright, Page
 from scraper.job_scraper import scrape_jobs
 from services.job_service import process_jobs
 from storages.sqlite_storage import SQLiteStorage
-from urllib.parse import urljoin
-from dotenv import load_dotenv
+from db.schema import create_table_jobs
 from config.logging_config import setup_logging
 import logging
-import os
 
-load_dotenv()
+
 setup_logging()
 logger = logging.getLogger("main")
 
@@ -19,30 +17,16 @@ def main():
             page = browser.new_page()
             
             # url = os.getenv("LINK_SCRAPE")
-            url = os.getenv("LINK_SAMPLE")
-            page.goto(url=url)
-            
+          
             file_path = "data/scraper.db"
             storage = SQLiteStorage(file_path)
+            create_table_jobs(storage)
             
-            existing_ids = storage.load_job_ids()
-            page_num = 1
-                        
-            # Browse all pages of the industry.
-            while True:
-                url_base = page.url
-                logger.info(f"Currently scraping number {page_num} page")
-                raw_jobs = scrape_jobs(page, url_base=url_base)
-                
-                process_jobs(raw_jobs, storage=storage, existing_ids=existing_ids)
-                
-                has_next = go_to_next_page(page=page)
-                page_num += 1
-                if not has_next:
-                    logger.info("End of page, stop scrape")
-                    break      
+            industries = storage.select("Industries", ["industry_id","url"])
             
-        
+            for industry in industries[2:]:
+                scrape_industry(page, storage=storage, industry = industry)
+            
         except Exception as e:
             logger.exception("Serious error in main()")
         
@@ -50,6 +34,27 @@ def main():
             if browser:
                 browser.close()
                 logger.info("Closed the browser")
+                
+def scrape_industry(page:Page, storage:SQLiteStorage, industry):
+    
+    url = industry.get('url')
+    page.goto(url)
+    
+    page_num = 1
+    
+    while True:
+        logger.info("Scraping page '%s'", page_num)
+        
+        raw_jobs = scrape_jobs(page, url_base=page.url)
+        
+        process_jobs(raw_jobs,
+                     storage=storage,
+                     industry_id=industry['industry_id'])
+        
+        if not go_to_next_page(page):
+            break
+        
+        page_num += 1
 
 
 def go_to_next_page(page: Page, timeout=30000):
