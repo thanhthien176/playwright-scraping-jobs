@@ -40,9 +40,7 @@ class SQLiteStorage:
             logger.info("Table '%s' created successfully", table_name)
             
         except Exception:
-            logger.exception("Cannot create table '%s'", {table_name})
-
-            
+            logger.exception("Cannot create table '%s'", table_name)       
             
     def append(
         self,
@@ -72,7 +70,36 @@ class SQLiteStorage:
         except Exception:
             logger.exception("Error when append data into '%s' table", table_name)
  
-    
+    def upsert(self, table_name: str, data:dict, conflict: str):
+        """ Insert a row into the table, update it  if a conflict occurs
+        
+        Args:
+            table_name (str): Target table name.
+            data (dict): Column-value mapping for the row.
+            conflict (str): Column name used as the conflict target
+                (usually a PRIMARY KEY or UNIQUE column)
+        """
+                
+        columns = ", ".join(data.keys())
+        placeholders = ", ".join(["?"]*len(data))
+        
+        update_sql = ", ".join(
+            f"{col} = excluded.{col}" for col in data.keys() if col != conflict
+        )
+        
+        query = f"""
+            INSERT INTO {table_name} ({columns})
+            VALUES ({placeholders})
+            ON CONFLICT({conflict})
+            DO UPDATE SET ({update_sql})
+        """
+        
+        try:
+            with self._connect() as conn:
+                conn.execute(query, tuple(data.values()))
+        
+        except Exception:
+            logger.exception("Error upserting into '%s'", table_name)
           
     def select(
         self,
@@ -98,6 +125,7 @@ class SQLiteStorage:
         if not self._is_valid_name(table_name):
             raise ValueError("The table name is incorrect")
         
+        columns_str = ""
         if columns is not None:
             for col in columns:  
                 if not self._is_valid_name(col):
@@ -127,7 +155,7 @@ class SQLiteStorage:
             with self._connect() as conn:
                 rows = conn.execute(query, params).fetchall()
 
-                return rows    
+                return self._format_rows(rows)    
             
         except Exception:
             logger.exception("Error retrieving data from table '%s'", table_name)
@@ -184,9 +212,7 @@ class SQLiteStorage:
             
         except Exception:
             logger.exception("Error updating for '%s'", table_name)
-        
-
-        
+             
     def delete(self,
                table_name,
                filters: dict,
@@ -219,47 +245,126 @@ class SQLiteStorage:
             
             logger.info("Successfully deleted rows from table '%s' where '%s'", table_name, filters)
         except Exception:
-            logger.exception("Error deleting rows of '%s'", table_name)
-        
-    
+            logger.exception("Error deleting rows of '%s'", table_name)  
                 
-    def count(self, table_name:str, columns:list[str] | None=None, filters:dict|None = None):
-        """_summary_
+    def count(
+        self,
+        table_name:str,
+        columns:list[str] | None=None,
+        filters:dict|None = None,
+        order_by: str| None = None,
+        order: str | None = None,
+        limit: int | None = None):
+        """Count rows optionally grouped by columns.
 
         Args:
             table_name (str): Target table name
-            columns (str): Column name is make group
-            filter (dict): WHere to count
+            columns (list[str]): List columns name
+            filter (dict): Where to count
         """
         if not self._is_valid_name(table_name):
             raise ValueError("The table name is incorrect")
         
-
+        col_str = ""
+        one = True
         if columns is not None:
-            col_str = ""
+            
             for col in columns:
                 if not self._is_valid_name(col):
                     raise ValueError("The columns name is incorrect")
-                col_str += f"{col}, "
             
-        query = f"SELECT {col_str} COUNT(*) FROM {table_name}"
-        
-        
+            col_str = ", ".join(columns)
+            
+        query = f"SELECT {col_str + ', ' if col_str else ''}COUNT(*) FROM {table_name}"
         
         params = []
         if filters:
             where_sql, where_params = self._parse_logic(filters)
-            query += f"WHERE {where_sql}"
+            query += f" WHERE {where_sql}"
             params.extend(where_params)
         
-        query += f"GROUP BY {col_str}" if col_str else " "
+        if col_str:
+            one = False
+            query += f" GROUP BY {col_str}"
+            
+        if order_by:
+            query += f" ORDER BY {order_by}"
+            if order.upper() in ["ASC", "DESC"]:
+                query += f" {order.upper()}"
+            
+        if limit:
+            query += f" LIMIT {limit}"
       
         try:
             with self._connect() as conn:
-                return conn.execute(query, params)
+                rows = conn.execute(query, params).fetchall()
+                return self._format_rows(rows, one=one)
         
         except Exception:
-            logger.exception("Error when count '%s' of '%s' ", columns, table_name)   
+            logger.exception("Error when count '%s' of '%s' ", columns, table_name)
+    
+    def first(self, table_name:str, columns:list[str] | None = None, filters:dict | None = None):
+        """ Get the first of required data
+
+        Args:
+            table_name (str): Target table name
+            columns (list[str] | None, optional): List columns name is required.Defaults to None.
+            filters (dict {key: (operator, value)}): Conditions to retrieve data. Defaults to None.
+        """
+        rows = self.select(table_name, columns, filters, limit=1)
+        return self._format_rows(rows=rows, one=True)
+    
+    def exists(self, table_name: str, filters:dict):
+        """Check exists of data
+
+        Args:
+            table_name (str): Target table name
+            filters (dict {key: (operator, value)}): filter for where
+        """
+        where_sql, where_params = self._parse_logic(filters)
+        
+        sql =f"""
+            SELECT 1
+            FROM {table_name}
+            WHERE {where_sql}
+            LIMIT 1
+        """
+        
+        try:
+            with self._connect() as conn:
+                cur = conn.execute(sql, where_params)
+                return cur.fetchone() is not None
+            
+        except Exception:
+            logger.exception("Error get data with where '%s'", filters)
+    
+    def tables(self):
+        """ Get list all tables in database
+        """
+        try:
+            with self._connect() as conn:
+                tables = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+                return self._format_rows(rows=tables)
+        except Exception:
+            logger.exception("Error when get list all tables")
+    
+    def schema(self, table_name):
+        "Get schema of a table"
+        with self._connect() as conn:
+            cursor = conn.execute(f"PRAGMA table_info({table_name})")
+            rows = cursor.fetchall()
+            
+            schema = {}
+            for row in rows:
+                name = row[1]
+                schema[name] = {
+                    "type": row[2],
+                    "notnull": row[3],
+                    "default": row[4],
+                    "pk": bool(row[5])
+                }
+            
+            return schema
     
     def _connect(self):
         # Return the connection, used with 'with' to automatically commit/rollback.
@@ -268,26 +373,25 @@ class SQLiteStorage:
         return conn
 
     def _parse_logic(self, filters:dict):
-        """Build a SQL WHERE clause string and parameter list from a filter dict.
+    
+        """Parse a nested filter dictionary into a SQL WHERE clause.
 
-        Supports top-level AND logic between keys, with optional OR groups.
+            The filter structure is a logical expression tree where each
+            dictionary contains exactly one key:
 
-        Args:
-            filters (dict): A dict where each key is either:
-                - "OR", "AND": maps to a sub-list of columns/conditions joined by OR, AND
-                - A column name: maps to a value or (operator, value) tuple
+            - column_name → ("operator", value)
+            - "AND" / "OR" → list of sub-filter dictionaries
 
-        Returns:
-            tuple[str, list]: A tuple of:
-                - WHERE clause string, e.g. "(col1 = ? AND (col2 = ? OR col3 >= ?))"
-                - Flat list of parameter values matching the placeholders
+            Example:
+                filters = {
+                    "AND": [
+                        {"age": (">", 18)},
+                        {"role": ("=", "admin")}
+                    ]
+                }
 
-        Example:
-            filters = {
-                "AND": ["OR": [{"salary": (">=", 5000)}, {"role": ("=","admin")}],
-                {"is_active": ("=", 1)},]
-            }
-            → ("(is_active = ? AND (salary >= ? OR role = ?))", [1, 5000, "admin"])
+            Returns:
+                tuple[str, list]: SQL clause and parameters.
         """
         
         params = []
@@ -346,8 +450,8 @@ class SQLiteStorage:
         
         op, value = val
         op = op.upper()
-        if op not in self.VALID_OPERATORS:
-            raise ValueError(f"Invalid operator. Allowed: {self.VALID_OPERATORS}")
+        if op not in VALID_OPERATORS:
+            raise ValueError(f"Invalid operator. Allowed: {VALID_OPERATORS}")
         
         if op in ["IN", "NOT IN"]:
             if not value:
@@ -369,6 +473,12 @@ class SQLiteStorage:
         else:
             query = f"{col} {op} ?"
             return query, [value]
+    
+    def _format_rows(self, rows, one=False):
+        if not rows:
+            return None if one else []
+        result = [dict(row) for row in rows]
+        return result[0] if one else result
         
     def _is_valid_name(self, name):
         return bool(NAME_PATTERN.fullmatch(name))
