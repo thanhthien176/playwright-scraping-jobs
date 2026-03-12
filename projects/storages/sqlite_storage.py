@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+from tabulate import tabulate
 import re
 
 logger = logging.getLogger("storage")
@@ -366,6 +367,54 @@ class SQLiteStorage:
             
             return schema
     
+    def safe_query(self, query:str, show=False):
+        conn = None
+        try:
+            conn = sqlite3.connect("file:data/scraper.db?mode=ro", uri=True)
+            conn.row_factory = sqlite3.Row 
+            
+            cursor = conn.cursor()
+            cursor.execute(query)
+            
+            rows = cursor.fetchall()
+                        
+            result = [dict(r) for r in rows]
+                        
+            if show:
+                result = self._format_numbers(result)
+                print(tabulate(result, headers="keys", tablefmt="grid"))
+            else:
+                return result
+        
+        except sqlite3.OperationalError as e:
+            logger.error("SQL error: %s", e)
+            return None
+        
+        except Exception:
+            logger.exception("Error when retrieving '%s'", query)
+            return None
+        
+        finally:
+            if conn:
+                conn.close()
+    
+    def _format_numbers(self, rows):
+        formatted = []
+        
+        for row in rows:
+            row = dict(row)
+            
+            new_row = {}
+            for k,v in row.items():
+                if isinstance(v, int):
+                    new_row[k] = f"{v:,}"
+                else:
+                    new_row[k] = v
+            formatted.append(new_row)
+        
+        return formatted
+    
+    
     def _connect(self):
         # Return the connection, used with 'with' to automatically commit/rollback.
         conn = sqlite3.connect(self.path)
@@ -474,10 +523,14 @@ class SQLiteStorage:
             query = f"{col} {op} ?"
             return query, [value]
     
-    def _format_rows(self, rows, one=False):
+    def _format_rows(self, rows, col_names = None, one=False):
         if not rows:
             return None if one else []
-        result = [dict(row) for row in rows]
+        
+        if col_names:
+            result = [dict(zip(col_names,row)) for row in rows]
+        else:
+            result = [dict(row) for row in rows]
         return result[0] if one else result
         
     def _is_valid_name(self, name):
