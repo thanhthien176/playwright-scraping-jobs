@@ -7,6 +7,7 @@ venv/
 playwright/.cache/
 scraping/
 data/
+database/
 sample/
 logs/
 *.log
