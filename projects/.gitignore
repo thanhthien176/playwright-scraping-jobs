@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.vscode/
+playwright/.cache/
+scraping/
+data/
+database/
+sample/
+logs/
+*.log
