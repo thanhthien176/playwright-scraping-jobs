@@ -93,7 +93,7 @@ ced00086448c2649fdb396baeba21a83,Internal HR Team Lead,CÔNG TY F&B ONSET,TP.HCM
 - [x] CSV storage
 - [x] SQLite integration
 - [x] Data validation & deduplication
-- [ ] PyQt5 GUI for non-technical users
+- [x] PySide6 GUI for non-technical users
 
 ## Why this project?
 Many job scraping scripts are hard to maintain and extend.

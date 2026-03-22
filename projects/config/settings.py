@@ -1,7 +1,7 @@
 # config/settings.py
 
 # ===== DATABASE =====
-DB_PATH = "db/app.db"
+DB_PATH = "database/scraper.db"
 
 # ===== DATA =====
 DATA_DIR = "data/"
