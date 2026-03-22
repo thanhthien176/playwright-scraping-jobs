@@ -6,7 +6,8 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QLineEdit,
     QHBoxLayout,
-    QVBoxLayout
+    QVBoxLayout,
+    QTextEdit
 )
 class SettingsTab(QWidget):
     def __init__(self):
@@ -29,24 +30,22 @@ class SettingsTab(QWidget):
         self.browse_btn = QPushButton("Browse")
         
         # left layout
-        left_layout = QGridLayout()
-        left_layout.addWidget(QLabel("Thread Count: "), 0,0)
-        left_layout.addWidget(self.thread_spin, 0,1)
-        left_layout.addWidget(QLabel("Delay (sec): "), 1,0)
-        left_layout.addWidget(self.delay_spin, 1,1)
-        left_layout.addWidget(QLabel("Save Folder: "), 2,0)
-        left_layout.addWidget(self.path_edit, 2,1)
-        left_layout.addWidget(self.browse_btn, 2,2)
+        grid_layout = QGridLayout()
+        grid_layout.addWidget(QLabel("Thread Count: "), 0,0)
+        grid_layout.addWidget(self.thread_spin, 0,1)
+        grid_layout.addWidget(QLabel("Delay (sec): "), 1,0)
+        grid_layout.addWidget(self.delay_spin, 1,1)
+        grid_layout.addWidget(QLabel("Save Folder: "), 2,0)
+        grid_layout.addWidget(self.path_edit, 2,1)
+        grid_layout.addWidget(self.browse_btn, 2,2)
         
         
-        # right layout
-        right_layout = QVBoxLayout()
         
         
         # setting layout
-        setting_layout = QHBoxLayout()
-        setting_layout.addLayout(left_layout)
-        setting_layout.addLayout(right_layout)
+        setting_layout = QVBoxLayout()
+        setting_layout.addLayout(grid_layout)
+        setting_layout.addStretch()
         
         self.setLayout(setting_layout)
         

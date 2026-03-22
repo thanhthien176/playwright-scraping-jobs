@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTextEdit    
 )
-from tabs.tables import TablesTab
+from .table_tabs import TablesTab
 
 class QueriesTab(QWidget):
     def __init__(self):

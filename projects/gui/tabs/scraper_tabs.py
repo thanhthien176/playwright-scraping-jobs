@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 class ScraperTab(QWidget):
     def __init__(self):
         super().__init__()
+        self.is_running = False
         
         # url input
         self.url_combo = QComboBox()
@@ -28,6 +29,7 @@ class ScraperTab(QWidget):
         # button
         self.start_button = QPushButton("Start")
         self.stop_button = QPushButton("Stop")
+        self.update_button = QPushButton("Update")
         self.clear_button = QPushButton("Clear")
         
         # set enabled
@@ -37,8 +39,9 @@ class ScraperTab(QWidget):
         # button layout
         btn_layout = QHBoxLayout()
         btn_layout.addWidget(self.start_button)
-        btn_layout.addWidget(self.stop_button)
+        btn_layout.addWidget(self.update_button)
         btn_layout.addStretch()
+        btn_layout.addWidget(self.stop_button)
         btn_layout.addWidget(self.clear_button)        
         
         # progress bar
@@ -63,39 +66,53 @@ class ScraperTab(QWidget):
         # set layout
         self.setLayout(scraper_layout)
         
-        # add event
-        self.start_button.clicked.connect(self.start_scraping)
-        self.stop_button.clicked.connect(self.stop_scraping)
+        # # add event
+        # self.start_button.clicked.connect(self.start_scraping)
+        # self.stop_button.clicked.connect(self.stop_scraping)
         self.clear_button.clicked.connect(self.clear_log)
         
-    def start_scraping(self):
-        url = self.get_url()
-        text = self.get_text()
-        self.clear_button.setEnabled(True)
+    # def start_scraping(self):
+    #     url = self.get_url()
+    #     text = self.get_text()
+    #     self.clear_button.setEnabled(True)
         
-        if url:
-            self.append_log(text=text)
-            self.append_log(text=url)
+    #     if url:
+    #         self.append_log(text=text)
+    #         self.append_log(text=url)
             
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
-        else:
-            self.append_log("Please select industry")
+    #         self.start_button.setEnabled(False)
+    #         self.stop_button.setEnabled(True)
+    #     else:
+    #         self.append_log("Please select industry")
             
-    def stop_scraping(self):
-        self.clear_button.setEnabled(True)
-        self.log_box.append("Stop scraping")
+    # def stop_scraping(self):
+    #     self.clear_button.setEnabled(True)
+    #     self.log_box.append("Stop scraping")
         
-        self.stop_button.setEnabled(False)
+    #     self.stop_button.setEnabled(False)
+    #     self.start_button.setEnabled(True)
+    
+    def start_processing(self):
+        self.start_button.setEnabled(False)
+        self.update_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
+        self.is_running = True
+        
+    def stop_processing(self):
         self.start_button.setEnabled(True)
+        self.update_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
+        self.is_running = False
+        
         
     def clear_log(self):
         self.clear_button.setEnabled(False)
         
         self.log_box.clear()
     
-    def add_item_box(self, name:str, url:str):
-        self.url_combo.addItem(name, url)
+    def add_item_box(self, data: dict):
+        name = data.get('name')
+        self.url_combo.addItem(name, data)
         
     def get_url(self):
         return self.url_combo.currentData()
@@ -104,5 +121,6 @@ class ScraperTab(QWidget):
         return self.url_combo.currentText()
     
     def append_log(self, text:str):
+        self.clear_button.setEnabled(True)
         self.log_box.append(text)
         

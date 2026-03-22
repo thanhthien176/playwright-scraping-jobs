@@ -1,22 +1,22 @@
 import sys
 from PySide6.QtWidgets import (
-    QApplication,
     QMainWindow,
     QTabWidget,
     QStatusBar,
 )
-from tabs.scrapers import ScraperTab
-from tabs.tables import TablesTab
-from tabs.settings import SettingsTab
-from tabs.queries import QueriesTab
+from .tabs.scraper_tabs import ScraperTab
+from .tabs.table_tabs import TablesTab
+from .tabs.setting_tabs import SettingsTab
+from .tabs.query_tabs import QueriesTab
+from config.settings import WINDOW_SIZE, WINDOW_TITLE
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        self.setWindowTitle("Scraper App")
-        self.resize(700,500)
+        self.setWindowTitle(WINDOW_TITLE)
+        self.resize(*WINDOW_SIZE)
         
         #tabs widget
         tabs = QTabWidget()
@@ -35,21 +35,9 @@ class MainWindow(QMainWindow):
         
         
         #status bar
-        self.statusBar().showMessage("Ready")
+        self.status = self.statusBar()
+        
+        self.status.showMessage('Ready')
+
         
         
-    
-
-
-def main():
-    app = QApplication(sys.argv)
-    
-    window = MainWindow()
-    
-    window.show()
-    
-    sys.exit(app.exec())
-    
-    
-if __name__ == "__main__":
-    main()
