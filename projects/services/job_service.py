@@ -4,50 +4,42 @@ import logging
 
 logger = logging.getLogger("services")
 
-def is_valid_job(raw):
-    if not raw:
-        return False
-    if not raw.get('url'):
-        return False
-    if not raw.get('title'):
-        return False
-    return True
+class JobProcess:
+    def __init__(self):
+        self.raw_jobs = None
+    
+    def set_raw_jobs(self, raw_jobs: list[dict]):
+        self.raw_jobs = raw_jobs
+    
+    def _is_valid_job(self, raw):
+        if not raw:
+            return False
+        if not raw.get('url'):
+            return False
+        if not raw.get('title'):
+            return False 
+        return True
 
-def process_jobs(raw_jobs, storage:SQLiteStorage, industry_id):
-    if not raw_jobs:
-        logger.warning("raw_jobs list is None, nothing to process")
-        return
-    
-    saved = 0
-    skipped = 0
-    
-    for raw in raw_jobs:
+    def process_jobs(self, industry_id):
+        if not self.raw_jobs:
+            logger.warning("Raw jobs list is None, nothing to process")
+            return
         
-        if not is_valid_job(raw):
-            skipped +=1
-            continue
-                
-        try:
-            job = Job.from_raw(raw, industry_id)
-            
-            if storage.exists("Jobs", filters={"job_id": ("=", job.job_id)}):
+        saved = 0
+        skipped = 0
+        
+        results = []
+        
+        for raw in self.raw_jobs:
+            if not self._is_valid_job(raw):
                 skipped += 1
                 continue
             
-            storage.append(table_name="Jobs", data= job.to_dict())
+            results.append(Job.from_raw(raw, industry_id=industry_id))
+        
+        return results
             
-            saved += 1
-            logger.debug(
-                "Saved job '%s': '%s' - '%s'",
-                job.job_id,
-                job.title,
-                job.company)
             
-        except Exception:
-            logger.exception(f"Error when create or saved the job from url: {raw.get('url')}")
-            skipped += 1
-    
-    logger.info(f"Result: Saved - {saved} new jobs, Skipped - {skipped} jobs")
-            
+        
         
     
