@@ -1,31 +1,33 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QRunnable
 
-class WorkerScrape(QObject):
+class WorkerSignal(QObject):
     log = Signal(str)
-    data = Signal(dict)
+    result = Signal(object)
     progress = Signal(int)
+    error = Signal(str)
     finished = Signal()
-    
-    def __init__(self, url):
+
+
+class ScraperWorker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
         super().__init__()
-        self.url = url
-        self.running = True
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignal()
+        self._is_cancelled = False
         
-    def run(self):
-        pass
-    
-
-class WorkerQuery(QObject):
-    log = Signal(str)
-    data = Signal(dict)
-    progress = Signal(int)
-    finished = Signal()
-    
-    def __init__(self, query):
-        super().__init__()
-        self.query = query
-        self.running = True
+    def cancel(self):
+        self._is_cancelled = True
     
     def run(self):
-        pass
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+            self.signals.result.emit(result)
+        except Exception as e:
+            self.signals.error.emit(str(e))
+        
+        finally:
+            self.signals.finished.emit()
+        
         
