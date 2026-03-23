@@ -1,4 +1,4 @@
-# Job Scraping Tool
+# Job Data Scraping & Processing System
 
 ## Overview
 This project is a job scraping tool built with Python and Playwright.
@@ -11,26 +11,36 @@ The project is developed step by step:
 - Build a simple GUI using PyQt5
 
 ## Features
-- Scrape job listings from websites
-- Store scraped data in CSV files
-- Prevent duplicate job entries
-- **Structured logging** with separate files for all logs and errors
-- Prepare architecture for future database integration
+- Automated job scraping using Playwright (handling dynamic content)
+- Data pipeline: scraping → validation → storage (SQLite)
+- Deduplication to prevent duplicate records
+- Structured logging system (separate app & error logs)
+- Modular architecture for scalability and maintainability
+- Desktop GUI (PySide6) for data visualization and management
+
+## Highlights
+- Collected and processed 10000+ job records
+- Reduced duplicate data entries through validation logic
+- Designed system architecture for future scalability
 
 ## Tech Stack
 - Python 3.10+
 - Playwright
-- CSV (current storage)
-- SQLite (planned)
-- PyQt5 (planned)
+- CSV
+- SQLite
+- PySide6
 
 ## Project Structure
-projects/
-├── scraper/
-├── storage/
-├── services/
-├── gui/
-├── main.py
+- scraper/: handles data extraction using Playwright
+- storage/: database interaction (SQLite, schema, CRUD)
+- services/: data processing and business logic
+- controller/: coordinates workflow between components
+- gui/: PySide6-based desktop interface
+- config/: application settings and configuration
+- threading/: background tasks for scraping and UI responsiveness
+- main.py: application entry point
+
+**The system is designed** with a modular architecture to ensure scalability, maintainability, and clear separation of concerns.
 
 ## Getting Started
 
@@ -96,7 +106,7 @@ ced00086448c2649fdb396baeba21a83,Internal HR Team Lead,CÔNG TY F&B ONSET,TP.HCM
 - [x] PySide6 GUI for non-technical users
 
 ## Why this project?
-Many job scraping scripts are hard to maintain and extend.
-This project focuses on clean architecture and gradual scalability.
+Many scraping scripts are difficult to scale and maintain.
+This project focuses on building a structured, modular system that can evolve from simple scripts to a scalable data processing application.
 
 
