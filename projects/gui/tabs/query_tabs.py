@@ -25,7 +25,7 @@ class QueriesTab(QWidget):
         
         right_label = QLabel("Queries: ")
         self.query = QTextEdit()
-        self.table = TablesTab(5,5)
+        self.table = TablesTab()
         
         right_splitter.addWidget(right_label)
         right_splitter.addWidget(self.query)
