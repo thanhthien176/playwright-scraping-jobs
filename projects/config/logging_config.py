@@ -48,29 +48,23 @@ LOGGING_CONFIG ={
     
     "loggers": {
         "asyncio":{
-            "level": "WARNING",
-            "propagate": False,  
+            "level": "WARNING" 
         },
         "scraper": {
-            "level": "DEBUG",
-            "handlers": ["console", "file_all", "file_errors"],
-            "propagate": False,
+            "level": "DEBUG"
         },
         "storage":{
-            "level": "INFO",
-            "handlers": ["console", "file_all", "file_errors"],
-            "propagate": False,
+            "level": "INFO"
         },
         "services": {
-            "level": "INFO",
-            "handlers": ["console", "file_all", "file_errors"],
-            "propagate": False,
+            "level": "INFO"
         },
+        "main": {"level": "INFO"}
     },
     
     "root": {
         "level": "DEBUG",
-        "handlers": ["file_all", "file_errors"]
+        "handlers": ["console", "file_all", "file_errors"]
     }
 }
 

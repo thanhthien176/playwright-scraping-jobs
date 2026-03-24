@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(tabs)
         
         self.scraper_tab = ScraperTab()
-        self.table_tab = TablesTab(5,5)
+        self.table_tab = TablesTab()
         self.setting_tab = SettingsTab()
         self.query_tab = QueriesTab()
         

@@ -70,7 +70,34 @@ class SQLiteStorage:
             
         except Exception:
             logger.exception("Error when append data into '%s' table", table_name)
- 
+    
+    def insert_many(self, table_name:str, data_list: list[dict]):
+        """Insert many data into table
+
+        Args:
+            table_name (str): The target table name
+            data_list (list[dict]): List of data dictionaries
+        """
+        if not data_list:
+            return
+        columns = ", ".join(data_list[0].keys())
+        placeholders = ", ".join(['?']*len(data_list[0]))
+        
+        query = f"INSERT OR IGNORE INTO {table_name} ({columns}) VALUES ({placeholders})"
+        
+        # Covert list[dict] to list[tupple] for use with executemany
+        params = [tuple(d.values()) for d in data_list]
+        
+        try:
+            with self._connect() as conn:
+                conn.executemany(query, params)
+            
+            logger.info("Inserted %d rows into %s", len(data_list), table_name)
+        
+        except Exception:
+            logger.exception("Error inserting many into %s", table_name)
+            
+        
     def upsert(self, table_name: str, data:dict, conflict: str):
         """ Insert a row into the table, update it  if a conflict occurs
         
@@ -101,6 +128,40 @@ class SQLiteStorage:
         
         except Exception:
             logger.exception("Error upserting into '%s'", table_name)
+    
+    def upsert_many(self, table_name: str, data_list:list[dict], conflict: str):
+        """Update or insert many rows
+
+        Args:
+            table_name (str): The target table name
+            data_list (list[dict]): List of data dictionaries
+            conflict (str): Column name used as the conflict target
+                (usually a PRIMARY KEY or UNIQUE column)
+        """
+        if not data_list:
+            return
+        
+        columns = ", ".join(data_list[0].keys())
+        placeholders = ", ".join(["?"] * len(data_list[0]))
+        
+        update_sql = ", ".join(
+            f"{col} = execlude{col}" for col in data_list[0].keys if col != conflict
+        )
+        
+        query = f"""
+            INSERT INTO {table_name} ({columns})
+            VALUES ({placeholders})
+            ON CONFLICT ({conflict})
+            DO UPDATE SET ({update_sql})            
+        """
+        
+        params = [tuple(d.values()) for d in data_list]
+        try:
+            with self._connect() as conn:
+                conn.executemany(query, params)
+            logger.info("Upserted %d rows into %s", len(data_list), table_name)
+        except Exception:
+            logger.exception("Error upserting many into '%s'", table_name)
           
     def select(
         self,

@@ -5,7 +5,8 @@ from scraper.job_scraper import JobScraper
 from services.job_service import JobProcess
 from gui.main_window import MainWindow
 from threads.scrape_thread import ScraperWorker
-from projects.threads.write_db_thread import DataWriter
+from threads.write_db_thread import DataWriter
+from threads.load_db_thread import LoadDataWorker
 from config.settings import DB_PATH, HEADER_JOB
 from config.logging_config import setup_logging
 import logging
@@ -28,7 +29,7 @@ class ScrapeController:
         
         
         #set
-        self.thread_pool.setMaxThreadCount(2)
+        self.thread_pool.setMaxThreadCount(5)
         self.table.set_table_headers(HEADER_JOB)
         
         
@@ -64,6 +65,13 @@ class ScrapeController:
         self.window.status.showMessage('Ready')
         if self._worker:
             self._worker.cancel()
+    
+    def load_jobs_to_ui(self, filters:dict=None):
+        """Load data from database into table UI
+
+        Args:
+            filters (dict, optional): filters to retrieve data. Defaults to None.
+        """
         
     def _on_result(self, data_rows):
         self.view.append_log(f"Done! Scraped {len(data_rows)} jobs")

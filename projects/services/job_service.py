@@ -7,6 +7,7 @@ logger = logging.getLogger("services")
 class JobProcess:
     def __init__(self):
         self.raw_jobs = None
+        self.result = []
     
     def set_raw_jobs(self, raw_jobs: list[dict]):
         self.raw_jobs = raw_jobs
@@ -27,17 +28,23 @@ class JobProcess:
         
         saved = 0
         skipped = 0
-        
-        results = []
-        
+                
         for raw in self.raw_jobs:
             if not self._is_valid_job(raw):
                 skipped += 1
                 continue
             
-            results.append(Job.from_raw(raw, industry_id=industry_id))
+            self.result.append(Job.from_raw(raw, industry_id=industry_id))
         
-        return results
+        return self
+        
+    
+    def to_dict(self):
+        res = []
+        if self.result:
+            for job in self.result:
+                res.append(job.to_dict())
+        return res
             
             
         

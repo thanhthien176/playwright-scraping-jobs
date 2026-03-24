@@ -19,3 +19,6 @@ BASE_URL = "https://example.com"
 # ===== UI =====
 WINDOW_TITLE = "Scraper App"
 WINDOW_SIZE = (700, 500)
+
+#====== TABLE ======
+HEADER_JOB = ['job_id', 'title', 'company', 'location', 'min_salary', 'max_salary', 'url', 'industry_id']
