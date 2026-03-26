@@ -13,9 +13,9 @@ from PySide6.QtWidgets import (
     )
 
 class ScraperTab(QWidget):
-    def __init__(self):
+    def __init__(self, main_window):
         super().__init__()
-        self.is_running = False
+        self.main_window = main_window
         
         # url input
         self.url_combo = QComboBox()
@@ -68,20 +68,25 @@ class ScraperTab(QWidget):
         
         # add event
         self.clear_button.clicked.connect(self.clear_log)
+        self.start_button.clicked.connect(self.start_scraping)
+        self.stop_button.clicked.connect(self.stop_scraping)    
     
-    def start_processing(self):
+    def start_scraping(self):
         self.start_button.setEnabled(False)
         self.update_button.setEnabled(False)
         self.stop_button.setEnabled(True)
-        self.is_running = True
+        self.main_window.start_scraping()
         
-    def stop_processing(self):
+    def stop_scraping(self):
+        self.set_button_stop()
+        self.main_window.stop_scraping()
+        
+    def set_button_stop(self):
         self.start_button.setEnabled(True)
         self.update_button.setEnabled(True)
         self.stop_button.setEnabled(False)
-        self.is_running = False
         
-        
+    
     def clear_log(self):
         self.clear_button.setEnabled(False)
         
@@ -91,7 +96,7 @@ class ScraperTab(QWidget):
         name = data.get('name')
         self.url_combo.addItem(name, data)
         
-    def get_url(self):
+    def get_industry(self):
         return self.url_combo.currentData()
     
     def get_text(self):
@@ -100,4 +105,6 @@ class ScraperTab(QWidget):
     def append_log(self, text:str):
         self.clear_button.setEnabled(True)
         self.log_box.append(text)
+        
+
         
