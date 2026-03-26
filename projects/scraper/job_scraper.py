@@ -18,29 +18,33 @@ class JobScraper:
         
         # get job <a> element
         a_elements = section.locator("a", has=self.page.locator("i.svicon-heart"))
-        a_elements.first.wait_for()
+        a_elements.first.wait_for(state="visible", timeout=5000)
         
-        total = a_elements.count()
+        all_elements = a_elements.all()
+        elements = [el for el in all_elements if el.is_visible()]
+        total = len(elements)
         logger.debug(f"Found {total} element in the page")
         list_res = []
         
         
-        for i in range(total):
-            
-            element = a_elements.nth(i)
-            
-            # Get link from href of <a> element
-            link = self._get_job_url(element)
-            
-            # Check if don't have link then skip 
-            if not link:
-                logger.debug(f"Link of {i} element does not exist")
-                continue
-            
-            # Join the link with this page's url to a full link         
-            url = urljoin(url_base, link)
-                    
-            list_res.append(self.extract_data(element, url))
+        for i, element in enumerate(elements):
+            try:
+                # Get link from href of <a> element
+                link = self._get_job_url(element)
+                
+                # Check if don't have link then skip 
+                if not link:
+                    logger.debug(f"Link of {i} element does not exist")
+                    continue
+                
+                # Join the link with this page's url to a full link         
+                url = urljoin(url_base, link)
+                        
+                list_res.append(self.extract_data(element, url))
+            except Exception as e:
+                logger.exception("Error %s element")
+                logger.info(f"Have scraped {len(list_res)} jobs")    
+                return list_res
         
         logger.info(f"Have scraped {len(list_res)} jobs")    
         return list_res
