@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QSplitter,
     QGridLayout,
+    QPushButton
 )
 
 class TablesTab(QWidget):
@@ -18,13 +19,17 @@ class TablesTab(QWidget):
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.table)
         
+        self.clear_btn = QPushButton("Clear")
+        
         # layout
         layout = QGridLayout()
         
         # add widget
-        layout.addWidget(splitter)      
+        layout.addWidget(splitter)
+        layout.addWidget(self.clear_btn)      
         
         self.setLayout(layout)
+        self.clear_btn.clicked.connect(self.clear_table)
     
     def set_table_headers(self, headers: list):
         self.table.setColumnCount(len(headers))
@@ -50,5 +55,5 @@ class TablesTab(QWidget):
                 QTableWidgetItem(str(data.get(key, '')))
             )
         
-    def table_clear(self):
+    def clear_table(self):
         self.table.clear()
