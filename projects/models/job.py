@@ -62,7 +62,7 @@ class Job:
             job_id=job_id,
             title=raw.get("title").strip(),
             company=raw.get("company","").strip(),
-            location=raw.get("location","").strip(),
+            location=raw.get("location","").strip() if raw.get("location") else None,
             min_salary=int(min_salary) if min_salary else None,
             max_salary=int(max_salary) if max_salary else None,
             url=raw["url"],
