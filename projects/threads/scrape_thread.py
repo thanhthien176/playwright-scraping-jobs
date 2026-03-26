@@ -3,7 +3,7 @@ from PySide6.QtCore import QObject, Signal, QRunnable
 from playwright.sync_api import sync_playwright
 from scraper.job_scraper import JobScraper
 from services.job_service import JobProcess
-from projects.threads.write_db_thread import DataWriter
+from threads.write_db_thread import DataWriter
 from config.logging_config import setup_logging
 
 setup_logging()
