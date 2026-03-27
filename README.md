@@ -1,5 +1,5 @@
 # Job Data Scraping & Processing System
-![alt text](image.png)
+![alt text](Scraper_app.gif)
 
 ## Overview
 This project is a job scraping tool built with Python and Playwright.
