@@ -46,9 +46,7 @@ class ScraperTab(QWidget):
         
         # progress bar
         self.progress = QProgressBar()
-        self.progress.setMinimum(0)
-        self.progress.setMaximum(100)
-        self.progress.setValue(30)
+
         
         # Log box
         self.log_box = QTextEdit()
@@ -72,6 +70,7 @@ class ScraperTab(QWidget):
         self.stop_button.clicked.connect(self.stop_scraping)    
     
     def start_scraping(self):
+        self.set_progress_start()
         self.start_button.setEnabled(False)
         self.update_button.setEnabled(False)
         self.stop_button.setEnabled(True)
@@ -79,12 +78,22 @@ class ScraperTab(QWidget):
         
     def stop_scraping(self):
         self.set_button_stop()
+        self.set_button_stop()
         self.main_window.stop_scraping()
         
     def set_button_stop(self):
         self.start_button.setEnabled(True)
         self.update_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+    
+    def set_progress_start(self):
+        self.progress.setRange(0,0)
+        self.progress.setFormat("Loading...")
+        
+    def set_progress_stop(self):
+        self.progress.setRange(0,100)
+        self.progress.setValue(100)
+        self.progress.setFormat("Completed")
         
     
     def clear_log(self):
