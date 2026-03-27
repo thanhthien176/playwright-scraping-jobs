@@ -7,26 +7,26 @@ setup_logging()
 logger = logging.getLogger("load_db_thread")
 
 class WorkerSignal(QObject):
-    result = Signal(list)
-    columns = Signal(list)
+    result = Signal(list, list) # rows, columns
     error = Signal(str)
     finished = Signal()
     
 class LoadDataWorker(QRunnable):
-    def __init__(self, storage: SQLiteStorage, table_name, filters=None):
+    def __init__(self, fn, *args, **kwargs):
         super().__init__()
-        self.storage = storage
-        self.table_name = table_name
-        self.filters = filters
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
         self.signals = WorkerSignal()
         
     def run(self):
         try:
-            data = self.storage.select(self.table_name, filters=self.filters)
-            schema = self.storage.schema(self.table_name).keys()
-            
-            # self.signals.columns.emit(schema if schema else [])
-            self.signals.result.emit(data if data else [])
+            data = self.fn(*self.args, **self.kwargs)
+            if data:
+                columns = list(data[0].keys())
+                self.signals.result.emit(data, columns)
         except Exception as e:
             self.signals.error.emit(str(e))
             logger.exception("Error retrieving from %s" ,self.table_name)
+        finally:
+            self.signals.finished.emit()

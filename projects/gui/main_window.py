@@ -45,19 +45,19 @@ class MainWindow(QMainWindow):
         if table_schema:
             self.query_tab.build_tree(table_schema)
         
-    def update_table_view(self, rows:list[dict], headers:dict[str, str]|None = None):
-        columns = self.columns if self.columns else []
+    def update_table_view(self, rows:list[dict], columns, headers:dict[str, str]|None = None):
         success, message = self.query_tab.load_data_to_table(rows=rows, columns=columns, headers=headers)
 
         if not success:
             self.append_log_box("Error: {message}")
         return success 
     
-    def start_query(self, table_name, schemas):
-        self.columns = schemas
-        self.controller.load_data_to_ui(table_name=table_name)
+    def start_select(self, table_name):
+        self.update_status("Loading...")
+        self.controller.select_db(table_name=table_name)
         
     def start_scraping(self):
+        self.update_status("Scraping...")
         self.controller.start_scraping()
     
     def stop_scraping(self):
@@ -88,3 +88,7 @@ class MainWindow(QMainWindow):
     # set button in scraper_tab
     def set_button_stop(self):
         self.scraper_tab.set_button_stop()
+        
+    def safe_query(self, query_text):
+        self.update_status("Loading...")
+        self.controller.safe_query_db(query_text)

@@ -38,7 +38,6 @@ class ScrapeController:
             return
         
         self.window.append_log_box(industry.get('name'))
-        self.window.update_status('Scraping...')
         
         # Create a worker and pass the scraping function and argument
         self._worker = ScraperWorker(industry, writer = self.writer)
@@ -53,22 +52,34 @@ class ScrapeController:
         
     
     def stop_scraping(self):
-        self.window.update_status('Ready')
+        self.window.update_status('Stoped')
         if self._worker:
             self._worker.cancel()
     
-    def load_data_to_ui(self, table_name, filters:dict=None):
-        """Load data from database into table UI
-
-        Args:
-            filters (dict, optional): filters to retrieve data. Defaults to None.
+    def select_db(self, table_name, filters=None):
+        self.run_load_db_thread(
+            self.storage.select,
+            self.window.update_table_view,
+            table_name,
+            filters            
+        )
+    
+    def safe_query_db(self, query_text):
+        self.run_load_db_thread(
+            self.storage.safe_query,
+            self.window.update_table_view,
+            query_text
+        )
+    
+    def run_load_db_thread(self, fn, on_result, *args, **kwargs):
+        """Load data from database into table View
         """
         # Create worker
-        worker = LoadDataWorker(self.storage, table_name=table_name, filters=filters)
+        worker = LoadDataWorker(fn, *args, **kwargs)
         
-        worker.signals.result.connect(self.window.update_table_view)
-        # worker.signals.columns.connect(self.window.update_columns)
+        worker.signals.result.connect(on_result)
         worker.signals.error.connect(self._on_error)
+        worker.signals.finished.connect(self._on_load_finished)
         
         self.thread_pool.start(worker)
         
@@ -79,11 +90,18 @@ class ScrapeController:
         
     def _on_error(self, msg):
         self.window.append_log_box(f"Error {msg}")
+        self.window.update_status("Error")
+        self.window.set_button_stop()
+        self.window.update_status("Error")
     
     def _on_finished(self):
         self.window.set_button_stop()
         self.window.append_log_box("Finished Scraping")
+        self.window.update_status("Done")
         self._worker = None
+    
+    def _on_load_finished(self):
+        self.window.update_status("Done")
             
     def get_industries(self) -> list:
         return self.storage.select("Industries")
