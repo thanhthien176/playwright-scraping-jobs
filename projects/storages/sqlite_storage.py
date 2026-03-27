@@ -1,6 +1,7 @@
 import sqlite3
 import logging
 from tabulate import tabulate
+from config.settings import DB_PATH
 import re
 
 logger = logging.getLogger("storage")
@@ -431,7 +432,7 @@ class SQLiteStorage:
     def safe_query(self, query:str, show=False):
         conn = None
         try:
-            conn = sqlite3.connect("file:data/scraper.db?mode=ro", uri=True)
+            conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
             conn.row_factory = sqlite3.Row 
             
             cursor = conn.cursor()
