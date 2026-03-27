@@ -45,6 +45,8 @@ class ScraperWorker(QRunnable):
                 scraper.goto(url=url)
                 num_page = 1
                 
+                total = 0
+                
                 while True:
                     logger.info("Scraping %s - page %s", name, num_page)
                     self.signals.log.emit(f"Scraping {name} - {num_page} page")
@@ -54,13 +56,14 @@ class ScraperWorker(QRunnable):
                     
                     self.job_process.set_raw_jobs(raw_jobs)
                     processed_batch = self.job_process.process_jobs(industry_id).to_dict()
-                
+
+                    total += len(processed_batch)
                     
                     if processed_batch:
                         self.signals.data_received.emit(processed_batch)
                         self.writer.add_data("Jobs", processed_batch)
                         
-                    self.signals.log.emit(f"Updated {len(processed_batch)} jobs from {num_page} page of {name}")
+                    self.signals.log.emit(f"Updated {total} jobs from {num_page} page of {name}")
                     
                     if not scraper.go_to_next_page() or self._is_cancelled:
                         self.signals.log.emit("Stoped Scraping")
@@ -75,5 +78,6 @@ class ScraperWorker(QRunnable):
             finally:
                 if browser:
                     browser.close()
+                self.signals.finished.emit()
     
         
