@@ -40,7 +40,8 @@ class MainWindow(QMainWindow):
         self.status.showMessage('Ready')
         self.controller = ScrapeController(window=self, writer=writer)
         
-        
+    
+    # =======QUERY TAB========
     def update_tree(self, table_schema:dict):
         if table_schema:
             self.query_tab.build_tree(table_schema)
@@ -52,43 +53,49 @@ class MainWindow(QMainWindow):
             self.append_log_box("Error: {message}")
         return success 
     
+    def safe_query(self, query_text):
+        self.update_status("Loading...")
+        self.controller.safe_query_db(query_text)
+    
     def start_select(self, table_name):
         self.update_status("Loading...")
         self.controller.select_db(table_name=table_name)
         
+    #========SCRAPING TAB=========        
     def start_scraping(self):
         self.update_status("Scraping...")
         self.controller.start_scraping()
     
     def stop_scraping(self):
         self.controller.stop_scraping()
-        
+    
     def append_log_box(self, text):
         self.scraper_tab.append_log(text)
     
-    def update_status(self, text:str):
-        self.status.showMessage(text)
+    # set button in scraper_tab
+    def set_button_stop(self):
+        self.scraper_tab.set_button_stop()
     
     # Get dict industry from QComboBox in scraper_tab    
     def get_industry(self):
         return self.scraper_tab.get_industry()
     
+    # Set text and data for QComboBox
+    def add_item_box(self, industry):
+        self.scraper_tab.add_item_box(data=industry)
+
+
+    # ======TABLE TAB========    
     # Set headers for table to show data was scraped
     def set_table_tab_headers(self, headers):
         self.table_tab.set_table_headers(headers)
     
     # add data into a row of the table
     def add_table_row(self, headers, data):
-        self.table_tab.add_row(headers=headers, data=data)
+        self.table_tab.add_row(headers=headers, data=data)    
     
-    # Set text and data for QComboBox
-    def add_item_box(self, industry):
-        self.scraper_tab.add_item_box(data=industry)
-
-    # set button in scraper_tab
-    def set_button_stop(self):
-        self.scraper_tab.set_button_stop()
+       
+    def update_status(self, text:str):
+        self.status.showMessage(text)
         
-    def safe_query(self, query_text):
-        self.update_status("Loading...")
-        self.controller.safe_query_db(query_text)
+    
