@@ -22,6 +22,7 @@ class JobProcess:
         return True
 
     def process_jobs(self, industry_id):
+        self.result = []
         if not self.raw_jobs:
             logger.warning("Raw jobs list is None, nothing to process")
             return
