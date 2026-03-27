@@ -36,6 +36,8 @@ class TablesTab(QWidget):
         self.table.setHorizontalHeaderLabels(headers)
     
     def load_data_to_table(self, headers: list, data_rows: list[dict]):
+        if self.table.columnCount() == 0:
+            self.set_table_headers(headers)
         self.table.setRowCount(len(data_rows))
         
         for row, item in enumerate(data_rows):
@@ -47,6 +49,9 @@ class TablesTab(QWidget):
         self.table.resizeColumnsToContents()
     
     def add_row(self, headers:list, data: dict):
+        if self.table.columnCount() == 0:
+            self.set_table_headers(headers)
+            
         row = self.table.rowCount()
         self.table.insertRow(row)
         for col, key in enumerate(headers):
