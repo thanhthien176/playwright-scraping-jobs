@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtGui import QColor
 import logging
 from config.logging_config import setup_logging
 
@@ -39,6 +40,12 @@ class DynamicTableModel(QAbstractTableModel):
             if isinstance(value, (int, float)):
                 return Qt.AlignRight | Qt.AlignVCenter
             return Qt.AlignLeft | Qt.AlignVCenter
+        
+        if role == Qt.BackgroundRole:
+            if index.row()%2 == 0:
+                return QColor("#F3E3D0")
+            else:
+                return QColor("#D2C4B4")
         
         return None
     
