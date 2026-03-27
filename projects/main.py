@@ -1,5 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QFont, QPalette, QColor
 from gui.main_window import MainWindow
 from controllers.scraper_controller import ScrapeController
 from threads.write_db_thread import DataWriter
@@ -13,6 +14,18 @@ logger = logging.getLogger("main")
     
 def main():
     app = QApplication(sys.argv)
+    
+    # SetFont
+    font = QFont("Noto Sans", 12)
+    app.setFont(font)
+    
+    # Set Color
+    palette = app.palette()
+    palette.setColor(QPalette.WindowText, QColor("#FFAA00"))
+    palette.setColor(QPalette.Text, QColor("#237227"))
+    palette.setColor(QPalette.Window, QColor("#519A66"))
+    palette.setColor(QPalette.Base, QColor("#FFD786"))
+    app.setPalette(palette)
         
     writer = DataWriter(DB_PATH)
     writer.start()
