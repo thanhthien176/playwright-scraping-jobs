@@ -78,7 +78,6 @@ class ScraperTab(QWidget):
         
     def stop_scraping(self):
         self.set_button_stop()
-        self.set_button_stop()
         self.main_window.stop_scraping()
         
     def set_button_stop(self):
@@ -90,7 +89,7 @@ class ScraperTab(QWidget):
         self.progress.setRange(0,0)
         self.progress.setFormat("Loading...")
         
-    def set_progress_stop(self):
+    def set_progress_finished(self):
         self.progress.setRange(0,100)
         self.progress.setValue(100)
         self.progress.setFormat("Completed")

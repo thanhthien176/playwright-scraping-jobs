@@ -98,6 +98,7 @@ class ScrapeController:
         self.window.set_button_stop()
         self.window.append_log_box("Finished Scraping")
         self.window.update_status("Done")
+        self.window.set_progress_finished()
         self._worker = None
     
     def _on_load_finished(self):

@@ -64,6 +64,7 @@ class ScraperWorker(QRunnable):
                         self.writer.add_data("Jobs", processed_batch)
                         
                     self.signals.log.emit(f"Updated {total} jobs from {num_page} page of {name}")
+                    logger.info(f"Updated {total} jobs from {num_page} page of {name}")
                     
                     if not scraper.go_to_next_page() or self._is_cancelled:
                         self.signals.log.emit("Stoped Scraping")

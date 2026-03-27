@@ -83,6 +83,9 @@ class MainWindow(QMainWindow):
     # Set text and data for QComboBox
     def add_item_box(self, industry):
         self.scraper_tab.add_item_box(data=industry)
+        
+    def set_progress_finished(self):
+        self.scraper_tab.set_progress_finished()
 
 
     # ======TABLE TAB========    
